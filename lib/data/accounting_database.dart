@@ -87,19 +87,32 @@ class AccountingDatabase {
   }
 
   Future<void> _seedAccounts(DatabaseExecutor db) async {
-    const defaults = <Account>[
+    const roots = <Account>[
       Account(code: '1000', name: 'الأصول', type: AccountType.asset),
-      Account(code: '1010', name: 'الصندوق', type: AccountType.asset),
-      Account(code: '1100', name: 'العملاء', type: AccountType.asset),
       Account(code: '2000', name: 'الالتزامات', type: AccountType.liability),
-      Account(code: '2010', name: 'الموردون', type: AccountType.liability),
       Account(code: '3000', name: 'حقوق الملكية', type: AccountType.equity),
       Account(code: '4000', name: 'الإيرادات', type: AccountType.income),
       Account(code: '5000', name: 'المصروفات', type: AccountType.expense),
     ];
-    for (final account in defaults) {
+    for (final account in roots) {
       await db.insert('accounts', account.toMap()..remove('id'),
           conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    const children = <({String code, String name, AccountType type, String parentCode})>[
+      (code: '1010', name: 'الصندوق', type: AccountType.asset, parentCode: '1000'),
+      (code: '1100', name: 'العملاء', type: AccountType.asset, parentCode: '1000'),
+      (code: '2010', name: 'الموردون', type: AccountType.liability, parentCode: '2000'),
+    ];
+    for (final child in children) {
+      final parent = await db.query('accounts',
+          columns: ['id'], where: 'code = ?', whereArgs: [child.parentCode], limit: 1);
+      await db.insert('accounts', {
+        'code': child.code,
+        'name': child.name,
+        'type': child.type.name,
+        'parent_id': parent.isEmpty ? null : parent.first['id'],
+        'is_active': 1,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
   }
 
