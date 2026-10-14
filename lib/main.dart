@@ -315,7 +315,7 @@ class _AccountingHomeState extends State<AccountingHome> {
                   style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               Text(
-                DateFormat('yyyy/MM/dd – HH:mm').format(entry.createdAt),
+                intl.DateFormat('yyyy/MM/dd – HH:mm').format(entry.createdAt),
                 style: const TextStyle(color: Colors.black54, fontSize: 12),
               ),
             ],
