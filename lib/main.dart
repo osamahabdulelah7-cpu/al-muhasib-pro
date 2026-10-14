@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 
 import 'data/accounting_database.dart';
+import 'models/account.dart';
 import 'models/financial_entry.dart';
 import 'services/accounting_summary.dart';
 
@@ -365,36 +366,67 @@ class _AccountingHomeState extends State<AccountingHome> {
         ]),
       );
 
-  Widget _settingsPage() => ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          Text('الإعدادات',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          SizedBox(height: 12),
-          ListTile(
-            leading: Icon(Icons.storage_outlined),
-            title: Text('التخزين المحلي'),
-            subtitle: Text('الحركات محفوظة في قاعدة بيانات على الجهاز.'),
-          ),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.backup_outlined),
-            title: Text('النسخ الاحتياطي والاستعادة'),
-            subtitle: Text('سيُفعّل بعد إضافة التصدير والتحقق من سلامة النسخة.'),
-          ),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.verified_user_outlined),
-            title: Text('حماية البيانات'),
-            subtitle: Text('لا توجد مزامنة سحابية مفعلة في هذه النسخة.'),
-          ),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('الإصدار'),
-            subtitle: Text('Al-Muhasib Pro 0.1.0 — نسخة تأسيسية'),
-          ),
-        ],
+  Widget _settingsPage() => FutureBuilder<List<Account>>(
+        future: _database.getAccounts(),
+        builder: (context, snapshot) {
+          final accounts = snapshot.data ?? const <Account>[];
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text('الإعدادات',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              const ListTile(
+                leading: Icon(Icons.storage_outlined),
+                title: Text('التخزين المحلي'),
+                subtitle: Text('الحركات محفوظة في قاعدة بيانات على الجهاز.'),
+              ),
+              const Divider(),
+              const Text('دليل الحسابات',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const LinearProgressIndicator(),
+              if (snapshot.hasError)
+                Text('تعذر تحميل دليل الحسابات: ${snapshot.error}'),
+              if (accounts.isEmpty && !snapshot.hasError &&
+                  snapshot.connectionState != ConnectionState.waiting)
+                const Text('لا توجد حسابات بعد.'),
+              ...accounts.map((account) => ListTile(
+                    dense: true,
+                    leading: Icon(
+                      account.parentId == null
+                          ? Icons.account_tree_outlined
+                          : Icons.subdirectory_arrow_left,
+                    ),
+                    title: Text(account.name),
+                    subtitle: Text('رمز الحساب: ${account.code} • ${account.type.name}'),
+                    trailing: Icon(
+                      account.isActive ? Icons.check_circle_outline : Icons.pause_circle_outline,
+                      size: 19,
+                    ),
+                  )),
+              const Divider(),
+              const ListTile(
+                leading: Icon(Icons.backup_outlined),
+                title: Text('النسخ الاحتياطي والاستعادة'),
+                subtitle: Text('سيُفعّل بعد إضافة التصدير والتحقق من سلامة النسخة.'),
+              ),
+              const Divider(),
+              const ListTile(
+                leading: Icon(Icons.verified_user_outlined),
+                title: Text('حماية البيانات'),
+                subtitle: Text('لا توجد مزامنة سحابية مفعلة في هذه النسخة.'),
+              ),
+              const Divider(),
+              const ListTile(
+                leading: Icon(Icons.info_outline),
+                title: Text('الإصدار'),
+                subtitle: Text('Al-Muhasib Pro 0.1.0 — نسخة تأسيسية'),
+              ),
+            ],
+          );
+        },
       );
 }
 
