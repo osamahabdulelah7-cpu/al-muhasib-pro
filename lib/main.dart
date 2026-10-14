@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' as intl;
 
 import 'data/accounting_database.dart';
 import 'models/account.dart';
@@ -76,7 +76,7 @@ class _AccountingHomeState extends State<AccountingHome> {
   }
 
   String _money(int minor) =>
-      '${NumberFormat('#,##0.00', 'en').format(minor / 100)} ر.ي';
+      '${intl.NumberFormat('#,##0.00', 'en').format(minor / 100)} ر.ي';
 
   Future<void> _addEntry() async {
     final entry = await showModalBottomSheet<FinancialEntry>(
