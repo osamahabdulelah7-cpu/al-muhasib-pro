@@ -203,15 +203,14 @@ class AccountingDatabase {
       clauses.add('je.entry_date <= ?');
       args.add(endOfDay.toIso8601String());
     }
-    final where = clauses.isEmpty ? '' : 'WHERE ${clauses.join(' AND ')}';
+    final joinFilters = clauses.isEmpty ? '' : ' AND ${clauses.join(' AND ')}';
     final rows = await db.rawQuery('''
       SELECT a.code AS account_code, a.name AS account_name, a.type AS account_type,
              COALESCE(SUM(jl.debit_minor), 0) AS debit_minor,
              COALESCE(SUM(jl.credit_minor), 0) AS credit_minor
       FROM accounts a
       LEFT JOIN journal_lines jl ON jl.account_id = a.id
-      LEFT JOIN journal_entries je ON je.id = jl.journal_entry_id AND je.status = 'posted'
-      $where
+      LEFT JOIN journal_entries je ON je.id = jl.journal_entry_id AND je.status = 'posted' $joinFilters
       GROUP BY a.id, a.code, a.name, a.type
       ORDER BY a.code ASC
     ''', args);
