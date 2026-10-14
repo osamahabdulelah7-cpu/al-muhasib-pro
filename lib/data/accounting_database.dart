@@ -206,8 +206,8 @@ class AccountingDatabase {
     final joinFilters = clauses.isEmpty ? '' : ' AND ${clauses.join(' AND ')}';
     final rows = await db.rawQuery('''
       SELECT a.code AS account_code, a.name AS account_name, a.type AS account_type,
-             COALESCE(SUM(jl.debit_minor), 0) AS debit_minor,
-             COALESCE(SUM(jl.credit_minor), 0) AS credit_minor
+             COALESCE(SUM(CASE WHEN je.id IS NOT NULL THEN jl.debit_minor ELSE 0 END), 0) AS debit_minor,
+             COALESCE(SUM(CASE WHEN je.id IS NOT NULL THEN jl.credit_minor ELSE 0 END), 0) AS credit_minor
       FROM accounts a
       LEFT JOIN journal_lines jl ON jl.account_id = a.id
       LEFT JOIN journal_entries je ON je.id = jl.journal_entry_id AND je.status = 'posted' $joinFilters
