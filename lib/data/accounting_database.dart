@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/account.dart';
 import '../models/financial_entry.dart';
 import '../models/journal_entry.dart';
+import '../models/trial_balance.dart';
 
 class AccountingDatabase {
   AccountingDatabase._();
@@ -169,6 +170,46 @@ class AccountingDatabase {
       }
       return headerId;
     });
+  }
+
+  Future<TrialBalance> getTrialBalance({
+    DateTime? from,
+    DateTime? through,
+  }) async {
+    final db = await database;
+    final clauses = <String>[];
+    final args = <Object?>[];
+    if (from != null) {
+      clauses.add('je.entry_date >= ?');
+      args.add(from.toIso8601String());
+    }
+    if (through != null) {
+      final endOfDay = DateTime(
+        through.year, through.month, through.day, 23, 59, 59, 999,
+      );
+      clauses.add('je.entry_date <= ?');
+      args.add(endOfDay.toIso8601String());
+    }
+    final where = clauses.isEmpty ? '' : 'WHERE ${clauses.join(' AND ')}';
+    final rows = await db.rawQuery('''
+      SELECT a.code AS account_code, a.name AS account_name, a.type AS account_type,
+             COALESCE(SUM(jl.debit_minor), 0) AS debit_minor,
+             COALESCE(SUM(jl.credit_minor), 0) AS credit_minor
+      FROM accounts a
+      LEFT JOIN journal_lines jl ON jl.account_id = a.id
+      LEFT JOIN journal_entries je ON je.id = jl.journal_entry_id AND je.status = 'posted'
+      $where
+      GROUP BY a.id, a.code, a.name, a.type
+      ORDER BY a.code ASC
+    ''', args);
+    final reportRows = rows.map((row) => TrialBalanceRow(
+      accountCode: row['account_code'] as String,
+      accountName: row['account_name'] as String,
+      accountType: row['account_type'] as String,
+      debitMinor: row['debit_minor'] as int,
+      creditMinor: row['credit_minor'] as int,
+    )).toList(growable: false);
+    return TrialBalance(rows: reportRows);
   }
 
   Future<void> close() async {
