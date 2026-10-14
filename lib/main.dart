@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'data/accounting_database.dart';
 import 'models/account.dart';
 import 'models/financial_entry.dart';
+import 'models/trial_balance.dart';
 import 'services/accounting_summary.dart';
 
 void main() {
@@ -339,16 +340,88 @@ class _AccountingHomeState extends State<AccountingHome> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           const Text(
-            'المؤشرات التالية مبنية على الحركات المسجلة. التقارير الرسمية ستُضاف بعد اكتمال دفتر القيود المزدوجة.',
+            'ملخص الحركات اليومية مستقل عن ميزان المراجعة، الذي يُحتسب من القيود المزدوجة المرحلة.',
           ),
           const SizedBox(height: 18),
-          _reportRow('إجمالي الإيرادات', _money(summary.incomeMinor),
+          _reportRow('إجمالي الإيرادات المسجلة', _money(summary.incomeMinor),
               const Color(0xFF18845F)),
-          _reportRow('إجمالي المصروفات', _money(summary.expenseMinor),
+          _reportRow('إجمالي المصروفات المسجلة', _money(summary.expenseMinor),
               const Color(0xFFC15B4A)),
-          _reportRow('الصافي', _money(summary.netMinor),
+          _reportRow('صافي الحركات المسجلة', _money(summary.netMinor),
               Theme.of(context).colorScheme.primary),
           _reportRow('عدد الحركات', _entries.length.toString(), Colors.blueGrey),
+          const SizedBox(height: 20),
+          const Text('ميزان المراجعة',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          const Text('يعرض القيود المزدوجة المرحلة فقط. الحركات اليومية البسيطة لا تدخل في هذا الميزان.'),
+          const SizedBox(height: 12),
+          FutureBuilder<TrialBalance>(
+            future: _database.getTrialBalance(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(),
+                ));
+              }
+              if (snapshot.hasError) {
+                return Text('تعذر إنشاء ميزان المراجعة: ${snapshot.error}');
+              }
+              final report = snapshot.data;
+              if (report == null) return const Text('لا توجد بيانات تقرير.');
+              return Column(
+                children: [
+                  _reportRow('إجمالي المدين', _money(report.totalDebitMinor),
+                      Theme.of(context).colorScheme.primary),
+                  _reportRow('إجمالي الدائن', _money(report.totalCreditMinor),
+                      Theme.of(context).colorScheme.primary),
+                  _reportRow('حالة التوازن',
+                      report.isBalanced ? 'متوازن' : 'غير متوازن',
+                      report.isBalanced ? const Color(0xFF18845F) : const Color(0xFFC15B4A)),
+                  if (report.rows.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text('لا توجد حسابات لعرضها.'),
+                    ),
+                  ...report.rows.map((row) => Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(row.accountName,
+                                style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(row.accountCode,
+                                style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(_money(row.debitMinor),
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(fontSize: 11)),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(_money(row.creditMinor),
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(fontSize: 11)),
+                      ),
+                    ]),
+                  )),
+                ],
+              );
+            },
+          ),
         ],
       );
 
