@@ -30,7 +30,7 @@ class _InventoryPageState extends State<InventoryPage> {
         TextFormField(controller:cost,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'تكلفة الوحدة بالريال'),validator:(v)=>v!=null&&(int.tryParse(v)??-1)>=0?null:'أدخل رقمًا صحيحًا'),
         TextFormField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'سعر البيع بالريال'),validator:(v)=>v!=null&&(int.tryParse(v)??-1)>=0?null:'أدخل رقمًا صحيحًا'),
       ]))),
-      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>form.currentState!.validate()?Navigator.pop(ctx,true):null,child:const Text('حفظ')],
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>form.currentState!.validate()?Navigator.pop(ctx,true):null,child:const Text('حفظ'))],
     ));
     if(ok==true) await _run(() async { await _service.saveProduct(sku:sku.text,name:name.text,category:category.text,costMinor:(int.parse(cost.text)*100),priceMinor:(int.parse(price.text)*100)); });
     sku.dispose(); name.dispose(); category.dispose(); price.dispose(); cost.dispose();
