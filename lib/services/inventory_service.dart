@@ -75,7 +75,31 @@ class InventoryService {
       if(p.isEmpty || w.isEmpty) throw StateError('الصنف أو المخزن غير موجود');
       final q=await txn.rawQuery('SELECT COALESCE(SUM(quantity_milli),0) AS qty FROM stock_movements WHERE product_id=? AND warehouse_id=?',[productId,warehouseId]);
       if((q.first['qty'] as int)+quantityMilli<0) throw StateError('الكمية غير كافية في المخزن');
-      await txn.insert('stock_movements',{'product_id':productId,'warehouse_id':warehouseId,'quantity_milli':quantityMilli,'unit_cost_minor':unitCostMinor,'reason':reason.trim(),'reference':reference.trim(),'created_at':DateTime.now().toIso8601String()});
+      final now = DateTime.now().toIso8601String();
+      if (quantityMilli > 0) {
+        await txn.insert('inventory_cost_layers', {
+          'product_id': productId, 'warehouse_id': warehouseId,
+          'source_reference': reference.trim().isEmpty ? 'ADJUSTMENT' : reference.trim(),
+          'received_at': now, 'original_quantity_milli': quantityMilli,
+          'remaining_quantity_milli': quantityMilli, 'unit_cost_minor': unitCostMinor,
+        });
+      } else {
+        var remaining = -quantityMilli;
+        final layers = await txn.query('inventory_cost_layers',
+          where: 'product_id=? AND warehouse_id=? AND remaining_quantity_milli>0',
+          whereArgs: [productId, warehouseId], orderBy: 'received_at ASC,id ASC');
+        for (final layer in layers) {
+          if (remaining == 0) break;
+          final available = layer['remaining_quantity_milli'] as int;
+          final taken = available < remaining ? available : remaining;
+          await txn.update('inventory_cost_layers',
+            {'remaining_quantity_milli': available - taken},
+            where: 'id=?', whereArgs: [layer['id']]);
+          remaining -= taken;
+        }
+        if (remaining != 0) throw StateError('لا يمكن صرف كمية تتجاوز طبقات تكلفة المخزون');
+      }
+      await txn.insert('stock_movements',{'product_id':productId,'warehouse_id':warehouseId,'quantity_milli':quantityMilli,'unit_cost_minor':unitCostMinor,'reason':reason.trim(),'reference':reference.trim(),'created_at':now});
     });
   }
 
