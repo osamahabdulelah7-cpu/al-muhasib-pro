@@ -19,12 +19,13 @@ class _InventoryPageState extends State<InventoryPage> {
     if (mounted) setState(() => _busy = false);
   }
   Future<void> _addProduct() async {
-    final sku=TextEditingController(), name=TextEditingController(), category=TextEditingController(), price=TextEditingController(), cost=TextEditingController();
+    final sku=TextEditingController(), barcode=TextEditingController(), name=TextEditingController(), category=TextEditingController(), price=TextEditingController(), cost=TextEditingController();
     final form=GlobalKey<FormState>();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
       title:const Text('إضافة صنف'),
       content:Form(key:form,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         TextFormField(controller:sku,decoration:const InputDecoration(labelText:'رمز الصنف *'),validator:(v)=>v==null||v.trim().isEmpty?'مطلوب':null),
+        TextFormField(controller:barcode,decoration:const InputDecoration(labelText:'الباركود *'),keyboardType:TextInputType.number,validator:(v)=>v==null||v.trim().isEmpty?'الباركود مطلوب':null),
         TextFormField(controller:name,decoration:const InputDecoration(labelText:'اسم الصنف *'),validator:(v)=>v==null||v.trim().isEmpty?'مطلوب':null),
         TextFormField(controller:category,decoration:const InputDecoration(labelText:'التصنيف')),
         TextFormField(controller:cost,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'تكلفة الوحدة بالريال'),validator:(v)=>v!=null&&(int.tryParse(v)??-1)>=0?null:'أدخل رقمًا صحيحًا'),
@@ -32,8 +33,8 @@ class _InventoryPageState extends State<InventoryPage> {
       ]))),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>form.currentState!.validate()?Navigator.pop(ctx,true):null,child:const Text('حفظ'))],
     ));
-    if(ok==true) await _run(() async { await _service.saveProduct(sku:sku.text,name:name.text,category:category.text,costMinor:(int.parse(cost.text)*100),priceMinor:(int.parse(price.text)*100)); });
-    sku.dispose(); name.dispose(); category.dispose(); price.dispose(); cost.dispose();
+    if(ok==true) await _run(() async { await _service.saveProduct(sku:sku.text,barcode:barcode.text,name:name.text,category:category.text,costMinor:(int.parse(cost.text)*100),priceMinor:(int.parse(price.text)*100)); });
+    sku.dispose(); barcode.dispose(); name.dispose(); category.dispose(); price.dispose(); cost.dispose();
   }
   Future<void> _addWarehouse() async {
     final name=TextEditingController(), location=TextEditingController();
