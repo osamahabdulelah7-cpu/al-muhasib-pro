@@ -7,6 +7,7 @@ import 'models/account.dart';
 import 'models/financial_entry.dart';
 import 'models/trial_balance.dart';
 import 'services/accounting_summary.dart';
+import 'services/inventory_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +133,7 @@ class _AccountingHomeState extends State<AccountingHome> {
                 _entriesPage(),
                 _reportsPage(summary),
                 _settingsPage(),
+                const InventoryPage(),
               ],
             ),
       floatingActionButton: _tab < 2
@@ -164,6 +166,11 @@ class _AccountingHomeState extends State<AccountingHome> {
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: 'الإعدادات',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: 'المخزون',
           ),
         ],
       ),
