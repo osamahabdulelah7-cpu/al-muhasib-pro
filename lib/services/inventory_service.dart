@@ -67,7 +67,7 @@ class InventoryService {
   Future<int> createDocument({required String number,required String kind,required int warehouseId,required List<({int productId,int quantityMilli,int unitPriceMinor})> lines,int? partyId,String note='',DateTime? date}) async {
     if(!{'sale','purchase','sale_return','purchase_return'}.contains(kind)||number.trim().isEmpty||lines.isEmpty) throw ArgumentError('نوع ورقم المستند والسطور مطلوبة');
     if(lines.any((l)=>l.quantityMilli<=0||l.unitPriceMinor<0)) throw ArgumentError('تحقق من الكميات والأسعار');
-    final total=lines.fold<int>(0,(sum,l)=>sum+(l.quantityMilli*l.unitPriceMinor~/1000);
+    final total=lines.fold<int>(0,(sum,l)=>sum+(l.quantityMilli*l.unitPriceMinor~/1000));
     final db=await _db;
     return db.transaction((txn) async {
       final id=await txn.insert('sales_documents',{'number':number.trim(),'kind':kind,'party_id':partyId,'warehouse_id':warehouseId,'document_date':(date??DateTime.now()).toIso8601String(),'status':'posted','total_minor':total,'note':note.trim()});
